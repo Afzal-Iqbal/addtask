@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import AppSidebarComp from "./side-bar"
-import { ModeToggle } from "../components/ui/mode-toggle";
+
 
 export default function Layout({children}) {
   return (
@@ -11,7 +11,7 @@ export default function Layout({children}) {
           <SidebarTrigger />
           <div className="flex items-center gap-2">
           
-          <ModeToggle />
+          {/* <ModeToggle /> */}
           {/* <ProfileMenu /> */}
           
 
