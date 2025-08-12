@@ -1,28 +1,15 @@
+// src/components/ui/AddTask.jsx
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
-import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
+import TaskForm from "./TaskForm";
+import TaskTable from "./TaskTable";
 import { auth, db } from "@/firebase";
-import { createTask, getTasksByUser, updateTask, deleteTask } from "@/lib/taskService";
-
-const today = new Date().toISOString().split("T")[0];
-
-const TaskSchema = Yup.object().shape({
-  taskName: Yup.string().required("Task name is required"),
-  description: Yup.string(),
-  deadline: Yup.date()
-    .min(today, "Deadline must be today or in the future")
-    .required("Deadline is required"),
-});
+import {
+  createTask,
+  getTasksByUser,
+  updateTask,
+  deleteTask,
+} from "@/lib/taskService";
 
 function AddTask() {
   const [tasks, setTasks] = useState([]);
@@ -99,7 +86,9 @@ function AddTask() {
       setEditId(null);
     } catch (error) {
       console.error("Error saving task:", error.message);
-      setError("Error saving task: Missing or insufficient permissions. Check Firebase rules.");
+      setError(
+        "Error saving task: Missing or insufficient permissions. Check Firebase rules."
+      );
     } finally {
       setLoading(false);
     }
@@ -173,7 +162,11 @@ function AddTask() {
         </div>
 
         {/* Error Message */}
-        {error && <div className="text-red-600 text-sm font-medium bg-red-100 p-2 rounded-md">{error}</div>}
+        {error && (
+          <div className="text-red-600 text-sm font-medium bg-red-100 p-2 rounded-md">
+            {error}
+          </div>
+        )}
 
         {/* Filter Buttons */}
         <div className="flex gap-3">
@@ -194,210 +187,22 @@ function AddTask() {
           ))}
         </div>
 
-        {/* Task Form */}
-        {showForm && (
-          <Card className="bg-white shadow-lg border border-gray-200 rounded-xl">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-800">
-                {editId !== null ? "Edit Task" : "Create a New Task"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Formik
-                initialValues={
-                  editId !== null
-                    ? {
-                        taskName: tasks.find((t) => t.id === editId)?.taskName || "",
-                        description: tasks.find((t) => t.id === editId)?.description || "",
-                        deadline: tasks.find((t) => t.id === editId)?.deadline || "",
-                      }
-                    : { taskName: "", description: "", deadline: "" }
-                }
-                enableReinitialize
-                validationSchema={TaskSchema}
-                onSubmit={handleAddTask}
-              >
-                {({ isSubmitting }) => (
-                  <Form className="space-y-6">
-                    <div>
-                      <Label htmlFor="taskName" className="font-medium text-gray-700">
-                        Task Name
-                      </Label>
-                      <Field
-                        name="taskName"
-                        as={Input}
-                        placeholder="Enter task name"
-                        className="mt-1 w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        disabled={loading}
-                      />
-                      <ErrorMessage
-                        name="taskName"
-                        component="div"
-                        className="text-sm text-red-600 mt-1"
-                      />
-                    </div>
+        <TaskForm
+          showForm={showForm}
+          editId={editId}
+          tasks={tasks}
+          onSubmit={handleAddTask}
+          loading={loading}
+        />
 
-                    <div>
-                      <Label htmlFor="description" className="font-medium text-gray-700">
-                        Description
-                      </Label>
-                      <Field
-                        name="description"
-                        as="textarea"
-                        rows="3"
-                        placeholder="Optional task details"
-                        className="w-full border-gray-300 rounded-md p-2 mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        disabled={loading}
-                      />
-                      <ErrorMessage
-                        name="description"
-                        component="div"
-                        className="text-sm text-red-600 mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="deadline" className="font-medium text-gray-700">
-                        Deadline
-                      </Label>
-                      <Field
-                        name="deadline"
-                        type="date"
-                        as={Input}
-                        min={today}
-                        className="mt-1 w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        disabled={loading}
-                      />
-                      <ErrorMessage
-                        name="deadline"
-                        component="div"
-                        className="text-sm text-red-600 mt-1"
-                      />
-                    </div>
-
-                    <CardFooter className="pt-4">
-                      <Button
-                        type="submit"
-                        disabled={isSubmitting || loading}
-                        className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 rounded-lg shadow-md transition duration-200"
-                      >
-                        {isSubmitting
-                          ? editId !== null
-                            ? "Updating..."
-                            : "Adding..."
-                          : editId !== null
-                          ? "Update Task"
-                          : "Add Task"}
-                      </Button>
-                    </CardFooter>
-                  </Form>
-                )}
-              </Formik>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Task Table */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-gray-900">📋 Tasks</h2>
-          {loading ? (
-            <p className="text-gray-600 text-sm font-medium">Loading tasks...</p>
-          ) : filteredTasks.length === 0 ? (
-            <p className="text-gray-600 text-sm font-medium">No tasks found.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-lg">
-                <thead className="bg-gray-100 text-gray-800">
-                  <tr>
-                    <th className="px-6 py-3 text-left font-semibold text-sm uppercase tracking-wider">Task Name</th>
-                    <th className="px-6 py-3 text-left font-semibold text-sm uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-3 text-left font-semibold text-sm uppercase tracking-wider">Deadline</th>
-                    <th className="px-6 py-3 text-left font-semibold text-sm uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left font-semibold text-sm uppercase tracking-wider">Mark Complete</th>
-                    <th className="px-6 py-3 text-left font-semibold text-sm uppercase tracking-wider">Edit</th>
-                    <th className="px-6 py-3 text-left font-semibold text-sm uppercase tracking-wider">Delete</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTasks.map((task) => {
-                    const isUpcoming = new Date(task.deadline) >= new Date(today);
-                    const completedDate = task.completedAt
-                      ? new Date(task.completedAt).toLocaleDateString()
-                      : null;
-
-                    return (
-                      <tr
-                        key={task.id}
-                        className="border-t border-gray-200 hover:bg-gray-50 transition duration-200"
-                      >
-                        <td className="px-6 py-4 text-gray-800 font-medium">{task.taskName}</td>
-                        <td className="px-6 py-4 text-gray-600">{task.description}</td>
-                        <td className={`px-6 py-4 ${isUpcoming ? "text-green-600 font-semibold" : "text-gray-500"}`}>
-                          {task.deadline}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-3 py-1 text-xs rounded-full font-medium ${
-                              task.status === "Completed"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {task.status}
-                          </span>
-                          {task.status === "Completed" && completedDate && (
-                            <div className="text-xs text-gray-500 mt-1">Completed on: {completedDate}</div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          {task.status === "Pending" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleStatusToggle(task.id)}
-                              title="Mark Complete"
-                              className="bg-green-50 text-green-600 hover:bg-green-100 border-green-200 disabled:bg-gray-100 disabled:text-gray-400"
-                              disabled={loading}
-                            >
-                              ✅
-                            </Button>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setEditId(task.id);
-                              setShowForm(true);
-                            }}
-                            title="Edit Task"
-                            className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200 disabled:bg-gray-100 disabled:text-gray-400"
-                            disabled={loading}
-                          >
-                            ✏️
-                          </Button>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteTask(task.id)}
-                            title="Delete Task"
-                            className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200 disabled:bg-gray-100 disabled:text-gray-400"
-                            disabled={loading}
-                          >
-                            🗑️
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <TaskTable
+          tasks={tasks}
+          filter={filter}
+          loading={loading}
+          onStatusToggle={handleStatusToggle}
+          onEdit={setEditId}
+          onDelete={handleDeleteTask}
+        />
       </div>
     </div>
   );
