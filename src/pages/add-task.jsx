@@ -1,4 +1,4 @@
-import AddTask from "@/components/ui/AddTask";
+import AddTask from "../components/ui/addtask";
 
 export default function AddTaskPage() {
   return (
